@@ -4,173 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Detector de Lengua de Señas</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-
-    .container {
-      background-color: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-      text-align: center;
-      max-width: 900px;
-      width: 100%;
-      margin-top: 20px;
-    }
-
-    h1 {
-      color: #0056b3;
-      margin-bottom: 25px;
-      font-size: 2em;
-    }
-
-    .camera-container {
-      position: relative;
-      width: 100%;
-      max-width: 640px;
-      margin: 0 auto 30px auto;
-      border: 3px solid #007bff;
-      border-radius: 8px;
-      overflow: hidden;
-      aspect-ratio: 16 / 9;
-    }
-
-    video, canvas {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      transform: scaleX(-1);
-      object-fit: cover;
-    }
-
-    #letraDetectada {
-      font-size: 2.5em;
-      font-weight: bold;
-      color: #007bff;
-      margin-bottom: 10px;
-    }
-
-    #controls {
-      margin-bottom: 25px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
-    }
-
-    #controls button,
-    #controls input[type="text"] {
-      padding: 12px 25px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1em;
-      cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    #startRecording {
-      background-color: #28a745;
-      color: white;
-    }
-
-    #startRecording:hover:not([disabled]) {
-      background-color: #218838;
-      transform: translateY(-2px);
-    }
-
-    #stopRecording {
-      background-color: #dc3545;
-      color: white;
-    }
-
-    #stopRecording:hover:not([disabled]) {
-      background-color: #c82333;
-      transform: translateY(-2px);
-    }
-
-    button:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    input[type="text"] {
-      border: 1px solid #ced4da;
-      width: 180px;
-      text-align: center;
-    }
-
-    #dataCollectionStatus {
-      font-size: 1.1em;
-      font-style: italic;
-      color: #555;
-      width: 100%;
-      margin-top: 10px;
-    }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Detector de Abecedario en Lengua de Señas Peruana (LSP)</h1>
-
-    <div class="camera-container">
-      <video id="video" autoplay playsinline></video>
-      <canvas id="canvas"></canvas>
-    </div>
-
-    <div id="letraDetectada">Letra detectada: Esperando gesto...</div>
-    <div id="controls">
-      <input id="currentLetterInput" maxlength="1" placeholder="Letra (A-Z, Ñ)">
-      <button id="startRecording" disabled>Iniciar Recolección</button>
-      <button id="stopRecording" disabled>Detener Recolección</button>
-    </div>
-    <div id="dataCollectionStatus"></div>
-  </div>
-
+  <h1>Detector de Abecedario en Lengua de Señas Peruana (LSP)</h1>
+  <video id="video" autoplay playsinline style="width: 640px; height: 480px; border: 2px solid black;"></video>
   <script type="module">
     import * as handPoseDetection from 'https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection';
     import * as tf from 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0';
     import 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.10.0';
 
     const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const letraText = document.getElementById("letraDetectada");
-    const startBtn = document.getElementById("startRecording");
-    const stopBtn = document.getElementById("stopRecording");
-    const letterInput = document.getElementById("currentLetterInput");
-    const statusText = document.getElementById("dataCollectionStatus");
 
-    let model;
-    let ultimaLetra = "";
-    let ultimaDeteccion = 0;
-    const cooldown = 2500;
-    let recolectando = false;
-    let datos = [];
-    let letraActual = "";
-    const intervalo = 100;
-    let ultimoRegistro = 0;
-    const minMuestras = 50;
-
-    const config = {
-      modelType: "lite",
-      maxHands: 1,
-      runtime: "mediapipe",
-      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
-    };
-
-    
     async function setupCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -178,163 +22,37 @@
         return new Promise(resolve => {
           video.onloadedmetadata = () => {
             video.play();
-            video.width = video.videoWidth;
-            video.height = video.videoHeight;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
             resolve(video);
           };
         });
       } catch (err) {
-        alert("❌ No se pudo acceder a la cámara. Verifica que diste permiso y que el navegador está en HTTPS.
-
-También asegúrate de que la cámara no esté siendo usada por otra app.");
+        alert("❌ No se pudo acceder a la cámara. Verifica los permisos y asegúrate de que esté disponible.");
+        console.error("Error accediendo a la cámara:", err);
         throw err;
       }
     }
-
-
-    function normalizarPuntos(puntos) {
-      const base = puntos[0];
-      const ref = Math.hypot(puntos[0].x - puntos[12].x, puntos[0].y - puntos[12].y);
-      return puntos.map(p => ({
-        x: (p.x - base.x) / ref,
-        y: (p.y - base.y) / ref,
-        z: (p.z - base.z) / ref
-      }));
-    }
-
-    function dibujarPuntos(puntos) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.scale(-1, 1);
-      ctx.translate(-canvas.width, 0);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      ctx.restore();
-
-      if (recolectando) {
-        ctx.strokeStyle = "limegreen";
-        ctx.lineWidth = 5;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-      }
-
-      const conexiones = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
-                          [0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],
-                          [0,17],[17,18],[18,19],[19,20]];
-
-      conexiones.forEach(([a, b]) => {
-        const p1 = puntos[a];
-        const p2 = puntos[b];
-        ctx.beginPath();
-        ctx.moveTo(canvas.width - p1.x * canvas.width, p1.y * canvas.height);
-        ctx.lineTo(canvas.width - p2.x * canvas.width, p2.y * canvas.height);
-        ctx.strokeStyle = "lightblue";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-
-      puntos.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(canvas.width - p.x * canvas.width, p.y * canvas.height, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = "red";
-        ctx.fill();
-      });
-    }
-
-    async function buclePrediccion() {
-      const ahora = Date.now();
-      const manos = await model.estimateHands(video, { flipHorizontal: false });
-      if (manos.length > 0) {
-        const puntos = manos[0].keypoints;
-        dibujarPuntos(puntos);
-
-        const normalizados = normalizarPuntos(puntos);
-        if (recolectando && ahora - ultimoRegistro > intervalo) {
-          datos.push({ features: normalizados.flatMap(p => [p.x, p.y, p.z]), label: letraActual });
-          statusText.textContent = `Recolectando '${letraActual}': ${datos.length} muestras`;
-          ultimoRegistro = ahora;
-        }
-
-        let letraDetectada = "";
-        const dPI = Math.hypot(puntos[4].x - puntos[8].x, puntos[4].y - puntos[8].y);
-
-        if (puntos[8].y > puntos[5].y && puntos[12].y > puntos[9].y && puntos[4].x < puntos[0].x) letraDetectada = "A";
-        else if (puntos[8].y < puntos[5].y && puntos[12].y < puntos[9].y && puntos[4].x > puntos[0].x) letraDetectada = "B";
-        else if (dPI < 0.08 && puntos[8].y > puntos[5].y) letraDetectada = "C";
-
-        if (letraDetectada && letraDetectada !== ultimaLetra && ahora - ultimaDeteccion > cooldown) {
-          letraText.textContent = `Letra detectada: ${letraDetectada}`;
-          ultimaLetra = letraDetectada;
-          ultimaDeteccion = ahora;
-        }
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        letraText.textContent = "Letra detectada: Esperando gesto...";
-        ultimaLetra = "";
-      }
-
-      requestAnimationFrame(buclePrediccion);
-    }
-
-    startBtn.addEventListener("click", () => {
-      const letra = letterInput.value.toUpperCase();
-      if (/^[A-ZÑ]$/.test(letra)) {
-        recolectando = true;
-        letraActual = letra;
-        datos = [];
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        letterInput.disabled = true;
-        statusText.textContent = `Recolectando datos para '${letraActual}'...`;
-      } else {
-        alert("Ingresa una sola letra válida (A-Z o Ñ)");
-      }
-    });
-
-    stopBtn.addEventListener("click", () => {
-      recolectando = false;
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-      letterInput.disabled = false;
-      statusText.textContent = `Recolección finalizada. Muestras: ${datos.length}`;
-
-      if (datos.length > 0) {
-        const blob = new Blob([JSON.stringify(datos, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `lsp_data_${letraActual}_${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        if (datos.length < minMuestras) {
-          alert(`Advertencia: Solo se recolectaron ${datos.length} muestras. Se recomienda mínimo ${minMuestras}.`);
-        }
-      } else {
-        alert("No se recolectaron datos.");
-      }
-
-      datos = [];
-      letraActual = "";
-    });
-
-    letterInput.addEventListener("input", () => {
-      const letra = letterInput.value.toUpperCase();
-      startBtn.disabled = !/^[A-ZÑ]$/.test(letra);
-    });
-
-    letterInput.addEventListener("keypress", e => {
-      if (!/^[a-zñA-ZÑ]$/.test(e.key)) e.preventDefault();
-    });
 
     async function iniciar() {
       await tf.setBackend("webgl");
       await tf.ready();
       await setupCamera();
-      model = await handPoseDetection.createDetector(handPoseDetection.SupportedModels.MediaPipeHands, config);
-      buclePrediccion();
+
+      const model = await handPoseDetection.createDetector(handPoseDetection.SupportedModels.MediaPipeHands, {
+        runtime: "mediapipe",
+        modelType: "lite",
+        maxHands: 1,
+        solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
+      });
+
+      async function detectar() {
+        const manos = await model.estimateHands(video, { flipHorizontal: false });
+        if (manos.length > 0) {
+          console.log("✋ Mano detectada");
+        }
+        requestAnimationFrame(detectar);
+      }
+
+      detectar();
     }
 
     iniciar();
