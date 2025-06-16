@@ -170,6 +170,7 @@
       solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
     };
 
+    
     async function setupCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -185,10 +186,13 @@
           };
         });
       } catch (err) {
-        alert("No se pudo acceder a la cámara. Permiso denegado o dispositivo en uso.");
+        alert("❌ No se pudo acceder a la cámara. Verifica que diste permiso y que el navegador está en HTTPS.
+
+También asegúrate de que la cámara no esté siendo usada por otra app.");
         throw err;
       }
     }
+
 
     function normalizarPuntos(puntos) {
       const base = puntos[0];
