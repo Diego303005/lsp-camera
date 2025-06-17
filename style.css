@@ -1,0 +1,104 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+  background-color: #f4f7f6;
+  color: #333;
+  padding: 20px;
+}
+
+h1 {
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+/* Contenedor para la cámara y el canvas uno al lado del otro */
+.camera-and-canvas-container {
+  display: flex; /* Esto hace que los hijos se pongan en fila */
+  gap: 20px;      /* Espacio entre el video y el canvas */
+  margin-bottom: 20px; /* Espacio debajo de este contenedor */
+}
+
+#webcam, #output {
+  width: 400px; /* Tamaño más pequeño para que quepan uno al lado del otro */
+  height: 300px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#webcam {
+  transform: scaleX(-1); /* Espejar la cámara para una vista más intuitiva */
+}
+
+/* El canvas ya no necesita 'position: absolute' porque no se superpone */
+#output {
+  /* No necesitamos estilos de posicionamiento especiales ya que está al lado */
+  /* El drawImage en script.js seguirá dibujando la imagen de la webcam en el canvas */
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 820px; /* Ancho para coincidir con el total de video + canvas + gap (400+400+20) */
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* --- MODIFICACIÓN: OCULTAR EL BOTÓN EXPORTAR VECTOR --- */
+#export {
+  display: none; /* Esto hará que el botón no sea visible */
+}
+/* ----------------------------------------------------- */
+
+button {
+  padding: 10px 20px;
+  font-size: 1em;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#vector {
+  margin-top: 10px;
+  background-color: #e9ecef;
+  padding: 15px;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  color: #555;
+  border: 1px solid #ced4da;
+}
+
+#recognizedGesture {
+  margin-top: 20px;
+  font-size: 2.8em;
+  font-weight: bold;
+  color: #28a745;
+  text-align: center;
+  width: 820px; /* Mismo ancho que el contenedor de controles */
+  padding: 15px;
+  background-color: #e6ffe6;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}

@@ -1,61 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Detector de Lengua de Señas</title>
+  <meta charset="UTF-8">
+  <title>Gestor de Señas con MediaPipe</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Detector de Abecedario en Lengua de Señas Peruana (LSP)</h1>
-  <video id="video" autoplay playsinline style="width: 640px; height: 480px; border: 2px solid black;"></video>
-  <script type="module">
-    import * as handPoseDetection from 'https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection';
-    import * as tf from 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0';
-    import 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.10.0';
+  <h1>Gestor de Señas con MediaPipe</h1>
 
-    const video = document.getElementById("video");
+  <div class="camera-and-canvas-container">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="output"></canvas>
+  </div>
 
-    async function setupCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        return new Promise(resolve => {
-          video.onloadedmetadata = () => {
-            video.play();
-            resolve(video);
-          };
-        });
-      } catch (err) {
-        alert("❌ No se pudo acceder a la cámara. Verifica los permisos y asegúrate de que esté disponible.");
-        console.error("Error accediendo a la cámara:", err);
-        throw err;
-      }
-    }
+  <div id="recognizedGesture"></div> 
 
-    async function iniciar() {
-      await tf.setBackend("webgl");
-      await tf.ready();
-      await setupCamera();
-
-      const model = await handPoseDetection.createDetector(handPoseDetection.SupportedModels.MediaPipeHands, {
-        runtime: "mediapipe",
-        modelType: "lite",
-        maxHands: 1,
-        solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
-      });
-
-      async function detectar() {
-        const manos = await model.estimateHands(video, { flipHorizontal: false });
-        if (manos.length > 0) {
-          console.log("✋ Mano detectada");
-        }
-        requestAnimationFrame(detectar);
-      }
-
-      detectar();
-    }
-
-    iniciar();
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script> 
+  <script src="script.js"></script>
 </body>
 </html>
